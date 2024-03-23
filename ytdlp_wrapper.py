@@ -1,4 +1,10 @@
 import subprocess
+from enum import Enum
+
+
+class VideoQuality(Enum):
+    HD = 22
+    SM = 18
 
 
 class YoutubeDownloadManager:
@@ -28,14 +34,21 @@ class YoutubeDownloadManager:
         except subprocess.CalledProcessError as e:
             self._print_verbose(f"Error: {e}")
 
-    def download_video(self, link):
-        command = [
-            "yt-dlp",
-            "-f", "22",
-            link,
-            "-o",
-            "./Videos/%(uploader)s/%(upload_date)s %(title)s.%(ext)s"
-        ]
+    def download_video(self, link, quality: VideoQuality = VideoQuality.HD, is_rate_limited=False,
+                       is_no_subtitles=False):
+        command = ["yt-dlp",
+                   "-f", str(quality.value),
+                   link]
+
+        if is_rate_limited is not False:
+            command.extend(["--limit-rate", "750K"])
+
+        if not is_no_subtitles:
+            command.extend(["--write-sub", "--write-auto-sub", "--sub-lang", "en.*"])
+
+        command.extend(["-o",
+                        "./Videos/%(uploader)s/%(upload_date)s %(title)s.%(ext)s"])
+
         try:
             if self.is_verbose:
                 subprocess.run(command, check=True)

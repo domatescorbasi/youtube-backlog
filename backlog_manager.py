@@ -1,8 +1,7 @@
-from datetime import datetime
-import os
-
 import database
+import os
 import ytdlp_wrapper
+from datetime import datetime
 
 
 def get_yes_or_no_input(prompt):
@@ -17,8 +16,10 @@ def get_yes_or_no_input(prompt):
 
 
 class BacklogManager:
-    def __init__(self, is_verbose):
+    def __init__(self, is_verbose, is_rate_limited, is_no_subtitles):
         self.is_verbose = is_verbose
+        self.is_rate_limited = is_rate_limited
+        self.is_no_subtitles = is_no_subtitles
         self.channel_manager = database.ChannelManager("channels.db", is_verbose=is_verbose)
         self.input_file = "youtube-links.txt"
         self.output_file = "output.txt"
@@ -53,7 +54,8 @@ class BacklogManager:
     def download_all_videos_of_channel(self, channel_name):
         videos = self.channel_manager.get_videos(channel_name)
         for video in videos:
-            if self.youtube_dl.download_video(video.link):
+            if self.youtube_dl.download_video(video.link, is_rate_limited=self.is_rate_limited,
+                                              is_no_subtitles=self.is_no_subtitles):
                 self.channel_manager.mark_video_downloaded(video.link)
         self._print_verbose(f"Download job of '{channel_name}' completed")
 
@@ -85,3 +87,10 @@ class BacklogManager:
                 self._print_verbose(f"Fresh {self.input_file} has been created.")
         else:
             self._print_verbose(f"{self.input_file} does not exist.")
+            with open(self.input_file, 'w'):
+                pass  # Using pass to indicate no further action is needed
+            self._print_verbose(f"Fresh {self.input_file} has been created.")
+
+# if __name__ == '__main__':
+#     backlog = BacklogManager(is_verbose=True)
+#     backlog.parse_and_load_to_database()
